@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nosso Álbum de Amor</title>
+
+    <!-- Tipografia elegante -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --white: #f7f4ee;
+        --soft-gold: #d7c3a2;
+        --light-gray: #ded8ce;
+        --warm-gray: #b8ab96;
+        --text: #f0ebe2;
+        --paper: #f8f2e9;
+        --paper-text: #544a3f;
+        --shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        font-family: "Inter", sans-serif;
+        color: var(--text);
+        background: #0f0f0f;
+        overflow-x: hidden;
+      }
+
+      /* Fundo discreto com filtros elegantes */
+      .background-layer {
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          linear-gradient(rgba(10, 10, 10, 0.6), rgba(10, 10, 10, 0.75)),
+          url("fundo.jpg") center / cover no-repeat,
+          linear-gradient(135deg, #1b1b1b, #101010);
+        filter: grayscale(1) blur(2px) brightness(0.5) contrast(0.88);
+        transform: scale(1.04);
+      }
+
+      .background-layer::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 45%);
+        opacity: 0.7;
+      }
+
+      /* Tela inicial para desbloquear áudio */
+      .start-screen {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.96);
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 2rem;
+        z-index: 50;
+        transition: opacity 0.9s ease, visibility 0.9s ease;
+      }
+
+      .start-screen__content {
+        animation: fadeUp 1.1s ease both;
+      }
+
+      .start-screen h1 {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(1.7rem, 6.5vw, 2.6rem);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .start-screen p {
+        margin-top: 1rem;
+        color: var(--light-gray);
+        font-size: 0.98rem;
+      }
+
+      .start-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .experience {
+        width: min(1120px, 92vw);
+        margin: 0 auto;
+        padding: 2rem 0 2.8rem;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 1s ease, transform 1s ease;
+      }
+
+      body.started .experience {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 1.8rem;
+      }
+
+      .header h2 {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(1.4rem, 5vw, 2rem);
+        font-weight: 600;
+        color: #f8f3ea;
+      }
+
+      .header p {
+        color: #ded7cb;
+        font-size: 0.96rem;
+        margin-top: 0.45rem;
+      }
+
+      /* Layout principal: mobile-first */
+      .content-grid {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .gallery {
+        display: grid;
+        gap: 1.1rem;
+        justify-items: center;
+      }
+
+      /* Polaroids elegantes */
+      .polaroid {
+        width: min(100%, 320px);
+        background: #fcfcfc;
+        border-radius: 10px;
+        padding: 0.9rem 0.9rem 1rem;
+        color: #3f3b36;
+        box-shadow: var(--shadow);
+        transform: translateY(16px) scale(0.98);
+        opacity: 0;
+        transition: transform 0.45s ease, box-shadow 0.45s ease;
+        cursor: pointer;
+        will-change: transform;
+      }
+
+      .polaroid.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(var(--rotation));
+        animation: fadeUp 0.8s ease both;
+      }
+
+      .polaroid:hover,
+      .polaroid:focus-visible {
+        transform: translateY(-2px) scale(1.01) rotate(var(--rotation));
+        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.26);
+      }
+
+      .photo-media {
+        position: relative;
+        aspect-ratio: 4 / 5;
+        border-radius: 6px;
+        overflow: hidden;
+        background: linear-gradient(140deg, #ece7de, #dfd5c8);
+      }
+
+      .photo-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+
+      .photo-media.is-loaded img {
+        opacity: 1;
+      }
+
+      .placeholder {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        text-align: center;
+        padding: 1rem;
+        color: #756b5d;
+        font-size: 0.92rem;
+        background: linear-gradient(130deg, #f0e7db, #e5d9c9);
+        transition: opacity 0.35s ease;
+      }
+
+      .photo-media.is-loaded .placeholder {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .caption {
+        margin-top: 0.7rem;
+        text-align: center;
+        font-family: "Playfair Display", serif;
+        font-size: 1rem;
+      }
+
+      /* Carta elegante */
+      .letter {
+        background: linear-gradient(160deg, #fcf5ea, #f4ebde);
+        border: 1px solid rgba(173, 141, 102, 0.28);
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.22);
+        border-radius: 14px;
+        padding: 1.5rem 1.2rem 4.6rem;
+        color: var(--paper-text);
+        max-width: 680px;
+        width: 100%;
+        justify-self: center;
+        opacity: 0;
+        transform: translateY(18px);
+        transition: opacity 0.9s ease, transform 0.9s ease;
+        position: relative;
+      }
+
+      .letter.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .letter h3 {
+        font-family: "Playfair Display", serif;
+        color: #6e5a44;
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+      }
+
+      .letter p {
+        font-size: 1rem;
+        line-height: 1.78;
+      }
+
+      .letter p + p {
+        margin-top: 0.95rem;
+      }
+
+      .signature {
+        position: absolute;
+        right: 1.3rem;
+        bottom: 1.1rem;
+        text-align: right;
+        white-space: pre-line;
+        font-family: "Great Vibes", cursive;
+        font-size: 1.65rem;
+        line-height: 1.15;
+        color: #7a6349;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.9s ease, transform 0.9s ease;
+      }
+
+      .signature.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Modal de destaque da foto */
+      .photo-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.72);
+        display: grid;
+        place-items: center;
+        padding: 1.2rem;
+        z-index: 60;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.35s ease, visibility 0.35s ease;
+      }
+
+      .photo-modal.open {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-card {
+        background: #fdfaf4;
+        border-radius: 14px;
+        padding: 0.95rem 0.95rem 1rem;
+        max-width: 560px;
+        width: min(100%, 560px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.38);
+        transform: translateY(10px) scale(0.98);
+        transition: transform 0.35s ease;
+        position: relative;
+      }
+
+      .photo-modal.open .modal-card {
+        transform: translateY(0) scale(1);
+      }
+
+      .modal-media {
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        aspect-ratio: 4 / 5;
+        background: linear-gradient(135deg, #f0e8dc, #e0d4c1);
+      }
+
+      .modal-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .modal-caption {
+        margin-top: 0.72rem;
+        text-align: center;
+        font-family: "Playfair Display", serif;
+        color: #4e4337;
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 0.35rem;
+        right: 0.45rem;
+        border: 0;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.45);
+        color: #fff;
+        font-size: 1.2rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: background 0.25s ease, transform 0.25s ease;
+      }
+
+      .modal-close:hover,
+      .modal-close:focus-visible {
+        background: rgba(0, 0, 0, 0.7);
+        transform: scale(1.04);
+      }
+
+      body.modal-open .experience {
+        filter: blur(4px) brightness(0.62);
+      }
+
+      @media (min-width: 980px) {
+        .experience {
+          padding-top: 3rem;
+        }
+
+        .content-grid {
+          grid-template-columns: minmax(360px, 430px) 1fr;
+          align-items: start;
+          gap: 2.1rem;
+        }
+
+        .gallery {
+          justify-items: stretch;
+        }
+
+        .polaroid {
+          justify-self: center;
+        }
+
+        .letter {
+          align-self: center;
+          margin-top: 0.8rem;
+        }
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="background-layer" aria-hidden="true"></div>
+
+    <!-- Tela inicial -->
+    <section class="start-screen" id="startScreen" role="button" tabindex="0" aria-label="Iniciar surpresa">
+      <div class="start-screen__content">
+        <h1>Tenho uma surpresa para você ❤️</h1>
+        <p>Toque em qualquer lugar para começar</p>
+      </div>
+    </section>
+
+    <audio id="bgMusic" src="musica.mp3" loop preload="auto"></audio>
+
+    <!-- Conteúdo principal -->
+    <main class="experience" id="experience">
+      <header class="header">
+        <h2>Um pequeno álbum para o nosso amor</h2>
+        <p>Cada lembrança aqui carrega um pedaço do que vivemos juntos.</p>
+      </header>
+
+      <section class="content-grid" aria-label="Galeria e carta">
+        <div class="gallery" id="gallery">
+          <article class="polaroid" style="--rotation: -5deg" data-caption="Nosso sorriso em um dia inesquecível">
+            <div class="photo-media">
+              <img src="foto1.jpg" alt="Foto especial 1" loading="lazy" />
+              <div class="placeholder">Sua foto aparecerá aqui em breve</div>
+            </div>
+            <p class="caption">Nosso sorriso em um dia inesquecível</p>
+          </article>
+
+          <article class="polaroid" style="--rotation: 3deg" data-caption="Um instante de carinho que guardo no coração">
+            <div class="photo-media">
+              <img src="foto2.jpg" alt="Foto especial 2" loading="lazy" />
+              <div class="placeholder">Uma nova lembrança será exibida aqui</div>
+            </div>
+            <p class="caption">Um instante de carinho que guardo no coração</p>
+          </article>
+
+          <article class="polaroid" style="--rotation: -2deg" data-caption="A beleza da nossa história em um só olhar">
+            <div class="photo-media">
+              <img src="foto3.jpg" alt="Foto especial 3" loading="lazy" />
+              <div class="placeholder">Espaço reservado para mais amor</div>
+            </div>
+            <p class="caption">A beleza da nossa história em um só olhar</p>
+          </article>
+        </div>
+
+        <article class="letter" id="letter">
+          <h3>Para você, meu amor</h3>
+          <p>Letycia,</p>
+          <p>Nosso amor floresce a cada dia.</p>
+          <p>
+            Nessa data, há 4 anos, esse amor gerou um belo fruto: nosso casamento.
+          </p>
+          <p>
+            Te amei cada dia e prometo, <em>assim como prometi naquela manhã de domingo</em>, continuar a te amar até o meu último suspiro.
+          </p>
+          <p>Feliz bodas, meu amor. ❤️</p>
+
+          <div class="signature" id="signature">
+Com todo o meu amor,
+Carlos
+28/08/2026
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <!-- Modal de foto ampliada -->
+    <div class="photo-modal" id="photoModal" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-label="Foto ampliada">
+        <button class="modal-close" id="closeModal" type="button" aria-label="Fechar foto">×</button>
+        <div class="modal-media" id="modalMedia"></div>
+        <p class="modal-caption" id="modalCaption"></p>
+      </div>
+    </div>
+
+    <script>
+      // Elementos principais
+      const body = document.body;
+      const startScreen = document.getElementById("startScreen");
+      const bgMusic = document.getElementById("bgMusic");
+      const polaroids = Array.from(document.querySelectorAll(".polaroid"));
+      const letter = document.getElementById("letter");
+      const signature = document.getElementById("signature");
+      const modal = document.getElementById("photoModal");
+      const modalMedia = document.getElementById("modalMedia");
+      const modalCaption = document.getElementById("modalCaption");
+      const closeModalButton = document.getElementById("closeModal");
+
+      let hasStarted = false;
+
+      // Configura fallback elegante para imagens ausentes
+      function prepareImages() {
+        const mediaBlocks = document.querySelectorAll(".photo-media");
+
+        mediaBlocks.forEach((media) => {
+          const image = media.querySelector("img");
+
+          if (!image) return;
+
+          image.addEventListener("load", () => {
+            media.classList.add("is-loaded");
+          });
+
+          image.addEventListener("error", () => {
+            media.classList.remove("is-loaded");
+          });
+
+          if (image.complete && image.naturalWidth > 0) {
+            media.classList.add("is-loaded");
+          }
+        });
+      }
+
+      // Revela fotos em sequência e depois carta + assinatura
+      function revealStoryElements() {
+        polaroids.forEach((polaroid, index) => {
+          setTimeout(() => {
+            polaroid.classList.add("visible");
+          }, 450 * (index + 1));
+        });
+
+        const photosDuration = 450 * polaroids.length + 700;
+
+        setTimeout(() => {
+          letter.classList.add("visible");
+
+          setTimeout(() => {
+            signature.classList.add("visible");
+          }, 2000);
+        }, photosDuration);
+      }
+
+      // Tenta iniciar a música sem quebrar caso o arquivo não exista
+      function startMusic() {
+        bgMusic
+          .play()
+          .then(() => {
+            // Reprodução iniciada com sucesso
+          })
+          .catch(() => {
+            // Ignora falhas de autoplay/arquivo ausente
+          });
+      }
+
+      // Inicia a experiência após o primeiro toque/clique
+      function startExperience() {
+        if (hasStarted) return;
+        hasStarted = true;
+
+        startMusic();
+        body.classList.add("started");
+        startScreen.classList.add("hidden");
+
+        setTimeout(() => {
+          startScreen.style.display = "none";
+        }, 950);
+
+        revealStoryElements();
+      }
+
+      // Abre modal com imagem ampliada e legenda
+      function openPhotoModal(polaroid) {
+        const image = polaroid.querySelector("img");
+        const caption = polaroid.dataset.caption || "";
+
+        modalMedia.innerHTML = "";
+
+        if (image && image.src) {
+          const modalImage = document.createElement("img");
+          modalImage.src = image.getAttribute("src");
+          modalImage.alt = image.alt || "Foto ampliada";
+
+          modalImage.addEventListener("error", () => {
+            modalMedia.innerHTML =
+              '<div class="placeholder">Imagem indisponível no momento</div>';
+          });
+
+          modalMedia.appendChild(modalImage);
+        } else {
+          modalMedia.innerHTML =
+            '<div class="placeholder">Imagem indisponível no momento</div>';
+        }
+
+        modalCaption.textContent = caption;
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+        body.classList.add("modal-open");
+      }
+
+      // Fecha modal de foto
+      function closePhotoModal() {
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+        body.classList.remove("modal-open");
+      }
+
+      // Eventos principais
+      startScreen.addEventListener("click", startExperience);
+      startScreen.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          startExperience();
+        }
+      });
+
+      polaroids.forEach((polaroid) => {
+        polaroid.addEventListener("click", () => openPhotoModal(polaroid));
+      });
+
+      closeModalButton.addEventListener("click", closePhotoModal);
+
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+          closePhotoModal();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modal.classList.contains("open")) {
+          closePhotoModal();
+        }
+      });
+
+      prepareImages();
+    </script>
+  </body>
+</html>
