@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1869,10 +1870,6 @@
         bottom: 8%;
       }
 
-      /* =======================================================
-         CARTA NO CELULAR
-      ======================================================== */
-
       .letter {
         left: 4%;
 
@@ -1931,10 +1928,6 @@
             1rem
           );
       }
-
-      /* =======================================================
-         FOTOS NO CELULAR
-      ======================================================== */
 
       .polaroid {
         width:
@@ -2304,10 +2297,6 @@
     id="experience"
   >
 
-    <!-- =====================================================
-         CABEÇALHO
-    ====================================================== -->
-
     <header class="header">
 
       <h2>
@@ -2320,10 +2309,6 @@
       </p>
 
     </header>
-
-    <!-- =====================================================
-         COMPOSIÇÃO
-    ====================================================== -->
 
     <section
       class="memory-board"
@@ -2651,6 +2636,22 @@
 
     let musicFadeTimer = null;
 
+    /*
+      Cada versão da carta possui seu próprio estado.
+
+      A carta em miniatura:
+      - escreve apenas uma vez.
+
+      A carta ampliada:
+      - escreve apenas uma vez.
+
+      Depois disso, sempre aparece completa.
+    */
+
+    let miniLetterHasTyped = false;
+
+    let modalLetterHasTyped = false;
+
     /* =========================================================
        TEXTOS
     ========================================================== */
@@ -2673,11 +2674,6 @@ Carlos
 
     /*
       Velocidade da carta.
-
-      35 = rápida
-      50 = natural
-      65 = romântica
-      80 = muito lenta
     */
 
     const TYPING_SPEED = 52;
@@ -2769,10 +2765,6 @@ Carlos
 
         cursor.className =
           "typing-cursor";
-
-      }
-
-      if (usePencil) {
 
         target.appendChild(
           cursor
@@ -2896,6 +2888,30 @@ Carlos
     function startLetterWriting() {
 
       /*
+        Se a carta já foi escrita anteriormente,
+        não digitamos novamente.
+      */
+
+      if (miniLetterHasTyped) {
+
+        letterText.textContent =
+          letterContent;
+
+        signature.textContent =
+          signatureContent;
+
+        return;
+      }
+
+      /*
+        Marca imediatamente como iniciada.
+        Assim, mesmo que seja clicada novamente
+        durante a animação, ela não reinicia.
+      */
+
+      miniLetterHasTyped = true;
+
+      /*
         Primeiro escreve a carta.
       */
 
@@ -2969,15 +2985,7 @@ Carlos
 
       hasStarted = true;
 
-      /*
-        Música.
-      */
-
       startMusic();
-
-      /*
-        Mostra a experiência.
-      */
 
       body.classList.add(
         "started"
@@ -2987,10 +2995,6 @@ Carlos
         "hidden"
       );
 
-      /*
-        Remove a tela inicial.
-      */
-
       setTimeout(() => {
 
         startScreen.style.display =
@@ -2998,30 +3002,17 @@ Carlos
 
       }, 1300);
 
-      /*
-        Fotos começam a aparecer.
-      */
-
       setTimeout(() => {
 
         revealPhotos();
 
       }, 450);
 
-      /*
-        Carta entra depois das fotos.
-      */
-
       setTimeout(() => {
 
         letter.classList.add(
           "visible"
         );
-
-        /*
-          Pequena pausa antes
-          da primeira palavra.
-        */
 
         setTimeout(() => {
 
@@ -3077,11 +3068,6 @@ Carlos
             }
           );
 
-          /*
-            Caso a imagem já tenha
-            carregado antes do evento.
-          */
-
           if (
             image.complete &&
             image.naturalWidth > 0
@@ -3103,11 +3089,6 @@ Carlos
     function openPhotoModal(
       polaroid
     ) {
-
-      /*
-        Garante que estamos no
-        modal normal de foto.
-      */
 
       modal.className =
         "photo-modal";
@@ -3178,11 +3159,6 @@ Carlos
         "false"
       );
 
-      /*
-        Abaixa um pouco a música
-        enquanto a foto está aberta.
-      */
-
       bgMusic.volume = 0.35;
     }
 
@@ -3191,6 +3167,20 @@ Carlos
     ========================================================== */
 
     function openLetterModal() {
+
+      /*
+        Interrompe qualquer digitação
+        que ainda esteja acontecendo.
+      */
+
+      if (typingTimer) {
+
+        clearTimeout(
+          typingTimer
+        );
+
+        typingTimer = null;
+      }
 
       modal.className =
         "photo-modal letter-modal";
@@ -3232,15 +3222,7 @@ Carlos
         "false"
       );
 
-      /*
-        Abaixa a música.
-      */
-
       bgMusic.volume = 0.32;
-
-      /*
-        Seleciona os elementos.
-      */
 
       const typedContent =
         paper.querySelector(
@@ -3253,38 +3235,67 @@ Carlos
         );
 
       /*
-        Escreve a carta.
+        =======================================================
+        PRIMEIRA VEZ
+        =======================================================
+
+        A carta ampliada é digitada lentamente.
+
+        =======================================================
       */
 
-      typeLetter(
-        typedContent,
-        letterContent,
-        45,
-        () => {
+      if (!modalLetterHasTyped) {
 
-          /*
-            Depois escreve a assinatura.
-          */
+        /*
+          Marca como já utilizada antes
+          de começar a animação.
+        */
 
-          setTimeout(() => {
+        modalLetterHasTyped = true;
 
-            typeLetter(
-              bigSignature,
-              signatureContent,
-              65,
-              null,
-              {
-                usePencil: true
-              }
-            );
+        typeLetter(
+          typedContent,
+          letterContent,
+          45,
+          () => {
 
-          }, 700);
+            setTimeout(() => {
 
-        },
-        {
-          usePencil: true
-        }
-      );
+              typeLetter(
+                bigSignature,
+                signatureContent,
+                65,
+                null,
+                {
+                  usePencil: true
+                }
+              );
+
+            }, 700);
+
+          },
+          {
+            usePencil: true
+          }
+        );
+
+      } else {
+
+        /*
+          =====================================================
+          SEGUNDA VEZ EM DIANTE
+
+          Não existe mais animação.
+          O conteúdo aparece completo.
+          =====================================================
+        */
+
+        typedContent.textContent =
+          letterContent;
+
+        bigSignature.textContent =
+          signatureContent;
+      }
     }
 
     /* =========================================================
@@ -3301,10 +3312,6 @@ Carlos
         "aria-hidden",
         "true"
       );
-
-      /*
-        Recupera volume.
-      */
 
       bgMusic.volume = 0.65;
 
@@ -3334,11 +3341,6 @@ Carlos
 
     function showFinalMessage() {
 
-      /*
-        Só mostra se a pessoa não
-        estiver com um modal aberto.
-      */
-
       if (
         modal.classList.contains(
           "open"
@@ -3356,11 +3358,6 @@ Carlos
         "aria-hidden",
         "false"
       );
-
-      /*
-        Deixamos a música mais baixa
-        para a mensagem final.
-      */
 
       bgMusic.volume = 0.42;
     }
@@ -3535,3 +3532,4 @@ Carlos
 
 </body>
 </html>
+
